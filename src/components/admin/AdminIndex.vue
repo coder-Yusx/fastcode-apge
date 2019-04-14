@@ -11,13 +11,13 @@
           @close="handleClose"
           @select="selectMenu"
           style="background: #dcdfe6;">
-          <el-submenu v-for="(item,index) in this.menus" :index="item.name" :key="index">
+          <el-submenu v-for="(item,index) in this.menus" :index="item.id+''" :key="index">
             <template slot="title">
               <i class="el-icon-menu"></i>
               <span slot="title">{{item.name}}</span>
             </template>
 
-              <el-menu-item v-for="(child,index) in item.children" :index="child.name" :key="index">
+              <el-menu-item v-for="(child,index) in item.children" :index="child.id+''" :key="index">
                 <span slot="title">{{child.name}}</span>
               </el-menu-item>
           </el-submenu>
@@ -34,7 +34,8 @@
               :label="item.title"
               :name="item.name"
             >
-              {{item.content}}
+              <!--{{item.content}}-->
+              <router-view/>
             </el-tab-pane>
           </el-tabs>
         </div>
@@ -50,18 +51,15 @@
       return {
         clientHeight:'',
 
-        editableTabsValue2: '2',
+        editableTabsValue2: '0',
         editableTabs2: [{
-          title: 'Tab 1',
+          title: '首页',
           name: '1',
-          content: 'Tab 1 content'
-        }, {
-          title: 'Tab 2',
-          name: '2',
-          content: 'Tab 2 content'
+          content: '首页'
         }],
         tabIndex: 2,
-        menus:[]
+        menus:[],
+        routers:[]
       }
     },
     methods:{
@@ -78,10 +76,16 @@
       },
       selectMenu(key,keyPath){
         console.log(key, keyPath);
+        for(var item of this.routers){
+          if(key == item.id){
+            this.addTab(item.routerName,item.routerPath)
+          }
+        }
+
         this.addTab(key)
       },
 
-      addTab(key) {
+      addTab(key,path) {
         var flag = -1
         this.editableTabs2.forEach(function(tab,index){
           if(tab.name == key){
@@ -94,6 +98,8 @@
             name:key,
             content:key
           })
+          //this.$router.push(path)
+          this.$router.push('/user')
         }
         this.editableTabsValue2 = key+''
       },
@@ -114,7 +120,7 @@
         this.editableTabsValue2 = activeName;
         this.editableTabs2 = tabs.filter(tab => tab.name !== targetName);
       },
-      menuToRouter:function(menus){
+      /*menuToRouter:function(menus){
       if(!menus) return null;
       var children=[]
         for(var menu of menus){
@@ -129,7 +135,7 @@
         }
         if(children) children.push(router)
         return children
-      }
+      }*/
     },
     mounted: function () {
       window.addEventListener('resize', this.getHeight);
@@ -141,17 +147,35 @@
         //_this.$store.commit("initMenus",data.data)
         //_this.menus=this.$store.getters.getMenus
         //填充菜单
-        console.log(data.data)
+        //console.log(data.data)
         _this.menus = data.data.children
 
         //填充路由
-        var router=_this.menuToRouter(data.data.children);
+        //var router=_this.menuToRouter(data.data.children);
+        //console.log(router)
 
-        console.log(router)
       })
 
       //获取路由
+      this.$api.getRouter().then(function (data) {
+        //console.log(data.data)
+        var routers=[]
+        for(var item of data.data){
+          var router={
+            path:item.routerPath,
+            name:item.routerName,
+            component:function () {
+              return import('@/component'+item.routerComponent)
+            }
+          }
+          routers.push(router)
+        }
+        //_this.$router.addRouters(routers)
 
+        _this.$router.options.routes.push(routers[0])
+        console.log(_this.$router.options.routes)
+        _this.routers=routers
+      })
     },
     destroyed(){
       window.removeEventListener('resize', this.getHeight)

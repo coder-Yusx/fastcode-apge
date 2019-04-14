@@ -9,3 +9,8 @@ export function login(username,password) {
 export function getMenus(){
   return get("/sys/menus")
 }
+
+//获取路由
+export function getRouter(){
+  return get("/sys/routers")
+}
